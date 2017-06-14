@@ -1,4 +1,4 @@
-module ConcertoCasAuth
+module ConcertoSamlAuth
   module ApplicationHelper
   end
 end

@@ -1,4 +1,4 @@
 Rails.application.routes.draw do
 
-  mount ConcertoCasAuth::Engine => "/concerto_cas_auth"
+  mount ConcertoSamlAuth::Engine => "/concerto_cas_auth"
 end

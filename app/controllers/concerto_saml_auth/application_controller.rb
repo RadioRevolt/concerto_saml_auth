@@ -1,39 +1,39 @@
-module ConcertoCasAuth
+module ConcertoSamlAuth
   class ApplicationController < ::ApplicationController
 
     # Used to map a user id with a corresponding authentication provider in the
-    #   database (in this case it's CAS)
+    #   database (in this case it's SAML)
     require 'concerto_identity'
 
-    # Find or create a new user based on values returned by the CAS callback
-    def find_from_omniauth(cas_hash)
-      # Get configuration options for customized CAS return value identifiers
-      omniauth_keys = ConcertoCasAuth::Engine.config.omniauth_keys
-      cas_hash[omniauth_keys[:uid_key]].downcase!
+    # Find or create a new user based on values returned by the SAML callback
+    def find_from_omniauth(saml_hash)
+      # Get configuration options for customized SAML return value identifiers
+      omniauth_keys = ConcertoSamlAuth::Engine.config.omniauth_keys
+      saml_hash[omniauth_keys[:uid_key]].downcase!
 
       # Check if an identity records exists for the user attempting to sign in
       if identity = ConcertoIdentity::Identity.find_by_external_id(
-                                            cas_hash[omniauth_keys[:uid_key]])
+                                            saml_hash[omniauth_keys[:uid_key]])
         # Return the matching user record
         return identity.user
       else
-        # Add a new user via omniauth cas details
+        # Add a new user via omniauth SAML details
         user = User.new
 
         # Set user attributes
 
         # First name is required for user validation
-        if !cas_hash[omniauth_keys[:first_name_key]].nil?
-          user.first_name = cas_hash[omniauth_keys[:first_name_key]]
-        else 
-          user.first_name = cas_hash[omniauth_keys[:uid_key]]
+        if !saml_hash[omniauth_keys[:first_name_key]].nil?
+          user.first_name = saml_hash[omniauth_keys[:first_name_key]]
+        else
+          user.first_name = saml_hash[omniauth_keys[:uid_key]]
         end
 
         # Email is required for user validation
-        if !cas_hash[omniauth_keys[:email_key]].nil?
-          user.email = cas_hash[omniauth_keys[:email_key]]
+        if !saml_hash[omniauth_keys[:email_key]].nil?
+          user.email = saml_hash[omniauth_keys[:email_key]]
         else
-          user.email = cas_hash[omniauth_keys[:uid_key]] + 
+          user.email = saml_hash[omniauth_keys[:uid_key]] +
                        "@" + omniauth_keys[:email_suffix].tr("@", "")
         end
 
@@ -60,22 +60,22 @@ module ConcertoCasAuth
 
           # Create Concerto Admin Group
           group = Group.where(:name => "Concerto Admins").first_or_create
-          membership = Membership.create(:user_id => user.id, 
-            :group_id => group.id, 
+          membership = Membership.create(:user_id => user.id,
+            :group_id => group.id,
             :level => Membership::LEVELS[:leader])
         end
 
         # Attempt to save our new user
         if user.save
-          # Create a matching identity to track our new user for future 
-          #   sessions and return our new user record 
-          ConcertoIdentity::Identity.create(provider: "cas", 
-            external_id: cas_hash[omniauth_keys[:uid_key]], 
+          # Create a matching identity to track our new user for future
+          #   sessions and return our new user record
+          ConcertoIdentity::Identity.create(provider: "saml",
+            external_id: saml_hash[omniauth_keys[:uid_key]],
             user_id: user.id)
           return user
         else
-          # User save failed, an error occurred 
-          flash.notice = "Failed to sign in with CAS. 
+          # User save failed, an error occurred
+          flash.notice = "Failed to sign in with SAML.
             #{user.errors.full_messages.to_sentence}."
           return nil
         end

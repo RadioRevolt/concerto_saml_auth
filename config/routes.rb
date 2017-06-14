@@ -1,3 +1,3 @@
 Concerto::Application.routes.draw do
-  get "/auth/cas/callback", :to => "concerto_cas_auth/omniauth_callback#cas_auth"
+  get "/auth/saml/callback", :to => "concerto_saml_auth/omniauth_callback#saml_auth"
 end
