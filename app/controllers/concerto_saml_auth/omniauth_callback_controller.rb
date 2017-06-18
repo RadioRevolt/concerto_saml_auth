@@ -3,7 +3,7 @@ require_dependency "concerto_saml_auth/application_controller"
 module ConcertoSamlAuth
   class OmniauthCallbackController < ApplicationController
 
-    def cas_auth
+    def saml_auth
       saml_hash = request.env["omniauth.auth"]
       user = find_from_omniauth(saml_hash)
 

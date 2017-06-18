@@ -13,7 +13,7 @@ module ConcertoSamlAuth
     def plugin_info(plugin_info_class)
       @plugin_info ||= plugin_info_class.new do
 
-        # Add our concerto_cas_auth route to the main application
+        # Add our concerto_saml_auth route to the main application
         add_route("concerto_saml_auth", ConcertoSamlAuth::Engine)
 
         # View hook to override Devise sign in links in the main application
