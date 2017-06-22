@@ -45,10 +45,16 @@ if ActiveRecord::Base.connection.table_exists? 'concerto_configs'
     :seq_no => 8,
     :description => "SAML field name containing the memberOf attribute, as retrieved from LDAP")
 
-  ConcertoConfig.make_concerto_config("saml_admin_groups", "administrator group",
+  ConcertoConfig.make_concerto_config("saml_member_of_filter", "OU=Access control",
     :value_type => "string",
     :category => "SAML User Authentication",
     :seq_no => 9,
+    :description => "Filter determining which groups are acted upon. At least one of the assertions provided here, separated by comma, must match a memberOf field for it to be included.")
+
+  ConcertoConfig.make_concerto_config("saml_admin_groups", "administrator group",
+    :value_type => "string",
+    :category => "SAML User Authentication",
+    :seq_no => 10,
     :description => "Common name of groups, separated by comma, whose members should be granted administrator permission in Concerto")
 
   # Store omniauth config values from main application's ConcertoConfig
@@ -65,6 +71,7 @@ if ActiveRecord::Base.connection.table_exists? 'concerto_configs'
         :last_name => ConcertoConfig[:saml_last_name_key],
     },
     :member_of_key => ConcertoConfig[:saml_member_of_key],
+    :member_of_filter => ConcertoConfig[:saml_member_of_filter],
     :admin_groups => ConcertoConfig[:saml_admin_groups]
     # :callback_url => "/auth/saml/callback"
   )
