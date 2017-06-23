@@ -189,12 +189,13 @@ module ConcertoSamlAuth
       admin_group_names.map! do |group|
         (group.strip).capitalize
       end
+
       user_groups = Membership.where(:user_id => user.id)
       user_group_names = user_groups.map do |membership|
         membership.group.name
       end
       should_be_admin = admin_group_names & user_group_names
-      user.is_admin = should_be_admin
+      user.is_admin = !should_be_admin.empty?
     end
 
   end

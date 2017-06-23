@@ -49,7 +49,7 @@ if ActiveRecord::Base.connection.table_exists? 'concerto_configs'
     :value_type => "string",
     :category => "SAML User Authentication",
     :seq_no => 9,
-    :description => "Filter determining which groups are acted upon. At least one of the assertions provided here, separated by comma, must match a memberOf field for it to be included.")
+    :description => "Filter determining which groups are made in Concerto. At least one of the assertions provided here, separated by comma, must match a memberOf field for it to be included.")
 
   ConcertoConfig.make_concerto_config("saml_admin_groups", "administrator group",
     :value_type => "string",
