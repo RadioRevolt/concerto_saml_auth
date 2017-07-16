@@ -20,5 +20,6 @@ Gem::Specification.new do |s|
   s.add_dependency "rails"
   s.add_dependency "omniauth-saml"
   s.add_dependency "concerto_identity"
+  s.add_dependency "activerecord-session_store"
 
 end

@@ -32,6 +32,10 @@ module ConcertoSamlAuth
         user.first_name = uid
       end
 
+      if !saml_hash[:info][:last_name].nil?
+        user.last_name = saml_hash[:info][:last_name]
+      end
+
       # Email is required for user validation
       if saml_hash[:info][:email].nil?
         flash.notice = "No email was provided by the identity provider"
@@ -43,29 +47,6 @@ module ConcertoSamlAuth
 
       # Set user password and confirmation to random tokens
       user.password,user.password_confirmation=Devise.friendly_token
-
-      # Check if this is our application's first user
-      if !User.exists?
-        # First user is an admin
-        first_user_setup = true
-        user.is_admin = true
-
-        # Error reporting
-        user.recieve_moderation_notifications = true
-        user.confirmed_at = Date.today
-
-        # Set concerto system config variables
-        if ConcertoConfig["setup_complete"] == false
-          ConcertoConfig.set("setup_complete", "true")
-          ConcertoConfig.set("send_errors", "true")
-        end
-
-        # Create Concerto Admin Group
-        group = Group.where(:name => "Concerto Admins").first_or_create
-        membership = Membership.create(:user_id => user.id,
-          :group_id => group.id,
-          :level => Membership::LEVELS[:leader])
-      end
 
       # Attempt to save our new user
       if user.save
@@ -89,7 +70,7 @@ module ConcertoSamlAuth
                                             user_id: user.id)
         end
 
-        return user
+        return {user: user, existed: user_existed}
       else
         # User save failed, an error occurred
         flash.notice = "Failed to sign in with SAML.
@@ -114,6 +95,7 @@ module ConcertoSamlAuth
       member_of_key = omniauth_config[:member_of_key]
       member_of_lines = saml_hash[:extra][:response_object].attributes.multi(member_of_key)
       if member_of_lines.nil?
+        Rails.logger.debug "No user groups found"
         return nil
       end
       # Go from array of "CN=Broadcast Engineer,OU=Commission,OU=Groups,DC=example,DC=com"
@@ -127,11 +109,14 @@ module ConcertoSamlAuth
           group_part.downcase
         end
       end
+      Rails.logger.debug "Interpreting the memberOf field:"
+      Rails.logger.debug groups_splitted
       # Remove elements which are not matched by the filter
       if !omniauth_config[:member_of_filter].blank?
         filter = omniauth_config[:member_of_filter]
-        (filter.strip).downcase!
+        filter = (filter.strip).downcase
         filter_list = filter.split(",")
+        Rails.logger.debug filter_list
         matching_groups = groups_splitted.select do |single_splitted_group|
           # Check if the intersection of single_splitted_group and filter_list has elements
           # (meaning that at least one element in single_splitted_group matches one element
@@ -141,6 +126,7 @@ module ConcertoSamlAuth
       else
         matching_groups = groups_splitted
       end
+      Rails.logger.debug matching_groups
       # Go to array of {:cn => ["broadcast engineer"], :ou => ["commission", "groups"], :dc => ["example", "com"]}
       group_hashes = matching_groups.map do |single_splitted_group|
         # Create a hash which returns new Arrays for missing entries
@@ -153,13 +139,15 @@ module ConcertoSamlAuth
         end
         resulting_group_hash
       end
+      Rails.logger.debug group_hashes
       # Go to array of "broadcast engineer", but ensure all CNs are included
       common_names = []
       group_hashes.each do |single_group_hash|
-        single_group_hash[:cn].each do |group_name|
+        single_group_hash["cn"].each do |group_name|
           common_names.push(group_name)
         end
       end
+      Rails.logger.debug common_names
       # Go to array of "Broadcast engineer" (normalizing names)
       common_names.map do |single_common_name|
         single_common_name.capitalize
@@ -170,8 +158,8 @@ module ConcertoSamlAuth
       all_groups.each do |group_name|
         group = Group.where(:name => group_name).first_or_create!
         membership = Membership.create!(:user_id => user.id, :group_id => group.id, :level => Membership::LEVELS[:regular])
-        membership.perms[:screen] = Membership::PERMISSIONS[:regular][:screen][:all]
-        membership.perms[:feed] = Membership::PERMISSIONS[:regular][:feed][:all]
+        membership.perms[:screen] = :all
+        membership.perms[:feed] = :all
         membership.save!
       end
     end
