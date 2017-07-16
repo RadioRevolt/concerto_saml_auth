@@ -9,4 +9,4 @@ test/dummy/.sass-cache
 Gemfile.lock
 .idea
 *.swp
-
+*.gem

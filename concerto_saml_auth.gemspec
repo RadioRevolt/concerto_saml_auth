@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.name        = "concerto_saml_auth"
   s.version     = ConcertoSamlAuth::VERSION
   s.authors     = ["Gabe Perez", "Thorben Dahl"]
-  s.email       = ["perez283@gmail.com", "thorben@sjostrom.no"]
+  s.email       = ["perez283@gmail.com", "thorben@thorbendahl.com"]
   s.homepage    = "http://www.concerto-signage.org"
   s.summary     = "Provides user authentication using SAML"
   s.description = "Authorize Concerto users with SAML"
@@ -20,6 +20,5 @@ Gem::Specification.new do |s|
   s.add_dependency "rails"
   s.add_dependency "omniauth-saml"
   s.add_dependency "concerto_identity"
-  s.add_dependency "activerecord-session_store"
 
 end

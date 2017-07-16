@@ -13,10 +13,9 @@ Installing the plugin
 1. Log in using a system admin account in your Concerto deployment. You should have set up your Concerto installation already.
 2. Click on the "plugins" button on the top navigation bar under the admin section.
 3. On the right side of the page, click on the "new plugin" button.
-4. With Git Repository selected as the source, write `concerto_saml_auth` as the Gem Name, and this repository's clone URL as the Source URL. 
-5. Click save, you will now stop your Concerto web server, run the ```bundle``` command (while in the Concerto directory), and start your web server again.
+4. With Ruby Gem selected as the source, write `concerto_saml_auth` as the Gem Name.
 6. Since the SAML plugin is not configured yet, you can log back into your Concerto accounts by visiting the ```your.concerto.url/users/sign_in``` route, using
-   any user that was not created using through SAML login. 
+   any user that was not created through SAML login. Or continue using the user you're logged in as.
 7. If the plugin was installed successfully, you will see a new "SAML User Authentication" settings tab under the "settings" page. This page can be found by clicking the "settings" button on the top navigation bar under the admin section.
 8. Configure the plugin and restart the web server, as explained below.
 9. Add your Service Provider's metadata to the Identity Provider. You can find your metadata at `your.concerto.url/auth/saml/metadata`.
