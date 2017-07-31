@@ -57,7 +57,7 @@ if ActiveRecord::Base.connection.table_exists? 'concerto_configs'
     :value_type => "string",
     :category => "SAML User Authentication",
     :seq_no => 9,
-    :description => "Mapping between LDAP groups and Concerto groups. Format: <GROUP NAME IN CONCERTO> = <GROUP NAME IN LDAP>[, <ANOTHER GROUP IN LDAP>]…; <ANOTHER GROUP NAME IN CONCERTO> = (and so on)")
+    :description => "Mapping between LDAP groups and Concerto groups. Format: GROUP NAME IN CONCERTO = GROUP NAME IN LDAP[, ANOTHER GROUP IN LDAP]…; ANOTHER GROUP NAME IN CONCERTO = (and so on)")
 
   ConcertoConfig.make_concerto_config("saml_admin_groups", "administrator group",
     :value_type => "string",
