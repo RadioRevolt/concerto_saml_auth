@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.version     = ConcertoSamlAuth::VERSION
   s.authors     = ["Gabe Perez", "Thorben Dahl"]
   s.email       = ["perez283@gmail.com", "thorben@thorbendahl.com"]
-  s.homepage    = "http://www.concerto-signage.org"
+  s.homepage    = "https://github.com/Studentmediene/concerto_saml_auth"
   s.summary     = "Provides user authentication using SAML"
   s.description = "Authorize Concerto users with SAML"
   s.license     = "Apache-2.0"
