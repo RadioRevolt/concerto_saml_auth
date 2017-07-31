@@ -16,16 +16,23 @@ if ActiveRecord::Base.connection.table_exists? 'concerto_configs'
     :seq_no => 2,
     :description => "A unique identifier used by this application to identify itself to the identity provider.")
 
-  ConcertoConfig.make_concerto_config("saml_uid_key", "uid",
+  default_saml_callback = "https://concerto.example.com/auth/saml/callback"
+  ConcertoConfig.make_concerto_config("saml_callback", default_saml_callback,
     :value_type => "string",
     :category => "SAML User Authentication",
     :seq_no => 3,
+    :description => "This is where the identity provider should redirect the user upon authentication. The path should be /auth/saml/callback, but using this setting you can enforce HTTPS for the callback. Leave empty or as default to automatically find callback URL.")
+
+  ConcertoConfig.make_concerto_config("saml_uid_key", "uid",
+    :value_type => "string",
+    :category => "SAML User Authentication",
+    :seq_no => 4,
     :description => "SAML field name containing user login names")
 
   ConcertoConfig.make_concerto_config("saml_email_key", "email",
     :value_type => "string",
     :category => "SAML User Authentication",
-    :seq_no => 4,
+    :seq_no => 5,
     :description => "SAML field name containing user email addresses. Leave blank if using email_suffix below")
 
   ConcertoConfig.make_concerto_config("saml_first_name_key", "first_name",
@@ -74,6 +81,11 @@ if ActiveRecord::Base.connection.table_exists? 'concerto_configs'
     Rails.logger.warn "No URL (or default URL) defined for IDP metadata, SAML authentication will not be working."
   end
 
+  saml_callback = ConcertoConfig[:saml_callback]
+  if saml_callback.present? && saml_callback != default_saml_callback
+    omniauth_config[:assertion_consumer_service_url] = saml_callback
+  end
+
   request_attributes = []
   if ConcertoConfig[:saml_email_key].present?
     request_attributes.push({:name => ConcertoConfig[:saml_email_key], :friendly_name => "Email", :is_required => true})
@@ -105,7 +117,6 @@ if ActiveRecord::Base.connection.table_exists? 'concerto_configs'
     :member_of_key => ConcertoConfig[:saml_member_of_key],
     :member_of_mapping => ConcertoConfig[:saml_member_of_mapping],
     :admin_groups => ConcertoConfig[:saml_admin_groups],
-    # :callback_url => "/auth/saml/callback"
   )
 
   Rails.logger.debug omniauth_config
