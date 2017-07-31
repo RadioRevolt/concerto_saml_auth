@@ -57,7 +57,7 @@ module ConcertoSamlAuth
         end
 
         if omniauth_config[:admin_groups].present?
-          synchronize_is_admin(user, omniauth_config)
+          synchronize_is_admin(user, saml_hash, omniauth_config)
         end
 
         user.save!
@@ -92,7 +92,26 @@ module ConcertoSamlAuth
     end
 
     def find_user_groups(saml_hash, omniauth_config)
+      member_of_mapping = create_member_of_mapping(omniauth_config[:member_of_mapping])
+      Rails.logger.debug member_of_mapping
+
+      common_names = find_cn_from_member_of(saml_hash, omniauth_config)
+
+      # Apply the mapping
+      concerto_groups = []
+      member_of_mapping.each do |concerto_group_name, ldap_group_names|
+        common_group_names = ldap_group_names & common_names
+        if common_group_names
+          # This user is a member of a group associated with this Concerto group.
+          concerto_groups.push(concerto_group_name)
+        end
+      end
+      concerto_groups
+    end
+
+    def find_cn_from_member_of(saml_hash, omniauth_config)
       member_of_key = omniauth_config[:member_of_key]
+
       member_of_lines = saml_hash[:extra][:response_object].attributes.multi(member_of_key)
       if member_of_lines.nil?
         Rails.logger.debug "No user groups found"
@@ -111,24 +130,8 @@ module ConcertoSamlAuth
       end
       Rails.logger.debug "Interpreting the memberOf field:"
       Rails.logger.debug groups_splitted
-      # Remove elements which are not matched by the filter
-      if !omniauth_config[:member_of_filter].blank?
-        filter = omniauth_config[:member_of_filter]
-        filter = (filter.strip).downcase
-        filter_list = filter.split(",")
-        Rails.logger.debug filter_list
-        matching_groups = groups_splitted.select do |single_splitted_group|
-          # Check if the intersection of single_splitted_group and filter_list has elements
-          # (meaning that at least one element in single_splitted_group matches one element
-          # in filter_list)
-          !(single_splitted_group & filter_list).empty?
-        end
-      else
-        matching_groups = groups_splitted
-      end
-      Rails.logger.debug matching_groups
       # Go to array of {:cn => ["broadcast engineer"], :ou => ["commission", "groups"], :dc => ["example", "com"]}
-      group_hashes = matching_groups.map do |single_splitted_group|
+      group_hashes = groups_splitted.map do |single_splitted_group|
         # Create a hash which returns new Arrays for missing entries
         resulting_group_hash = Hash.new{|h,k| h[k] = []}
         single_splitted_group.each do |single_group_attribute|
@@ -147,11 +150,29 @@ module ConcertoSamlAuth
           common_names.push(group_name)
         end
       end
-      Rails.logger.debug common_names
-      # Go to array of "Broadcast engineer" (normalizing names)
-      common_names.map do |single_common_name|
-        single_common_name.capitalize
+      common_names
+    end
+
+    def create_member_of_mapping(member_of_mapping_str)
+      member_of_mapping_str.strip!
+      group_statements = member_of_mapping_str.split(';')
+      group_statements.map! {|s| s.strip }
+      mapping = {}
+      group_statements.each do |statement|
+        parts = statement.split('=')
+        if parts.count <= 1
+          return nil
+        end
+        concerto_group_name = parts[0]
+
+        ldap_groups_str = parts[1]
+        ldap_groups_str.downcase!
+        ldap_group_names = ldap_groups_str.split(',')
+        ldap_group_names.map! {|s| s.strip }
+
+        mapping[concerto_group_name] = ldap_group_names
       end
+      mapping
     end
 
     def add_user_to(all_groups, user)
@@ -167,21 +188,18 @@ module ConcertoSamlAuth
     def remove_user_from(all_groups, user)
       all_groups.each do |group_name|
         group = Group.where(:name => group_name).first!
-        Membership.where(:user_id => user.id, :group_id => group.id).destroy
+        Membership.where(:user_id => user.id, :group_id => group.id).destroy_all
       end
     end
 
-    def synchronize_is_admin(user, omniauth_config)
+    def synchronize_is_admin(user, saml_hash, omniauth_config)
       admin_group_string = omniauth_config[:admin_groups]
       admin_group_names = admin_group_string.split(",")
       admin_group_names.map! do |group|
-        (group.strip).capitalize
+        (group.strip).downcase
       end
 
-      user_groups = Membership.where(:user_id => user.id)
-      user_group_names = user_groups.map do |membership|
-        membership.group.name
-      end
+      user_group_names = find_cn_from_member_of(saml_hash, omniauth_config)
       should_be_admin = admin_group_names & user_group_names
       user.is_admin = !should_be_admin.empty?
     end
